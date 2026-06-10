@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 
-const API_URL = '/api/v1/messages'
+const API_URL = '/api/messages'
 
 const PROMPT = `Eres un especialista en detección de errores ortográficos y errores relacionados con la dislexia en textos escritos a mano.
 
@@ -51,9 +51,6 @@ function IconCheck() {
 }
 
 export default function App() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('dislexza_key') || '')
-  const [keyInput, setKeyInput] = useState('')
-  const [showModal, setShowModal] = useState(false)
   const [image, setImage] = useState(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -73,22 +70,13 @@ export default function App() {
   }, [])
 
   const analyze = async () => {
-    if (!apiKey) {
-      setShowModal(true)
-      return
-    }
     setLoading(true)
     setApiError(null)
     setResult(null)
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2048,
@@ -120,21 +108,6 @@ export default function App() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const saveKey = () => {
-    const k = keyInput.trim()
-    if (!k) return
-    localStorage.setItem('dislexza_key', k)
-    setApiKey(k)
-    setKeyInput('')
-    setShowModal(false)
-  }
-
-  const removeKey = () => {
-    localStorage.removeItem('dislexza_key')
-    setApiKey('')
-    setShowModal(false)
   }
 
   const copy = () => {
@@ -216,21 +189,8 @@ export default function App() {
           )}
         </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={(e) => loadFile(e.target.files[0])}
-        />
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="sr-only"
-          onChange={(e) => loadFile(e.target.files[0])}
-        />
+        <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => loadFile(e.target.files[0])} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => loadFile(e.target.files[0])} />
 
         {/* Analyze button */}
         {image && (
@@ -241,9 +201,7 @@ export default function App() {
           >
             {loading ? (
               <>
-                <span
-                  className="inline-block w-4 h-4 rounded-full border-2 border-white/30 border-t-white spinner"
-                />
+                <span className="inline-block w-4 h-4 rounded-full border-2 border-white/30 border-t-white spinner" />
                 Analizando...
               </>
             ) : (
@@ -252,7 +210,7 @@ export default function App() {
           </button>
         )}
 
-        {/* API Error */}
+        {/* Error */}
         {apiError && (
           <div className="mt-4 p-4 rounded-2xl bg-red-50 border border-red-100">
             <p className="text-red-500 text-sm leading-relaxed">{apiError}</p>
@@ -263,35 +221,25 @@ export default function App() {
         {result && (
           <div className="mt-6 space-y-3.5 fade-up">
 
-            {/* Summary */}
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold ${
-                result.has_errors
-                  ? 'bg-red-50 text-red-500'
-                  : 'bg-gray-100 text-gray-500'
+                result.has_errors ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
               }`}>
                 {result.has_errors
                   ? `${result.error_count} error${result.error_count !== 1 ? 'es' : ''} encontrado${result.error_count !== 1 ? 's' : ''}`
                   : <><IconCheck /> Sin errores</>
                 }
               </span>
-              <button
-                onClick={reset}
-                className="ml-auto text-xs text-gray-400 hover:text-gray-700 transition-colors font-medium"
-              >
+              <button onClick={reset} className="ml-auto text-xs text-gray-400 hover:text-gray-700 transition-colors font-medium">
                 Nueva imagen
               </button>
             </div>
 
-            {/* Detected text */}
             <Card label="Texto detectado">
               <p className="p-5 leading-relaxed text-[1rem] text-gray-800 break-words">
                 {result.words.map((w, i) =>
                   w.has_error ? (
-                    <span
-                      key={i}
-                      className="text-red-500 underline underline-offset-2 decoration-wavy decoration-red-400/60"
-                    >
+                    <span key={i} className="text-red-500 underline underline-offset-2 decoration-wavy decoration-red-400/60">
                       {w.text}{' '}
                     </span>
                   ) : (
@@ -301,16 +249,10 @@ export default function App() {
               </p>
             </Card>
 
-            {/* Corrections */}
             {errorWords.length > 0 && (
               <Card label="Correcciones">
                 {errorWords.map((w, i) => (
-                  <div
-                    key={i}
-                    className={`px-5 py-3.5 flex items-center gap-3 ${
-                      i < errorWords.length - 1 ? 'border-b border-gray-50' : ''
-                    }`}
-                  >
+                  <div key={i} className={`px-5 py-3.5 flex items-center gap-3 ${i < errorWords.length - 1 ? 'border-b border-gray-50' : ''}`}>
                     <span className="font-medium text-red-400 line-through text-sm min-w-0">{w.text}</span>
                     <IconArrow />
                     <span className="font-semibold text-gray-900 text-sm min-w-0">{w.correction}</span>
@@ -324,19 +266,12 @@ export default function App() {
               </Card>
             )}
 
-            {/* Corrected text */}
             {result.has_errors && (
-              <Card
-                label="Texto corregido"
-                action={
-                  <button
-                    onClick={copy}
-                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors font-medium"
-                  >
-                    {copied ? '✓ Copiado' : 'Copiar'}
-                  </button>
-                }
-              >
+              <Card label="Texto corregido" action={
+                <button onClick={copy} className="text-xs text-gray-400 hover:text-gray-700 transition-colors font-medium">
+                  {copied ? '✓ Copiado' : 'Copiar'}
+                </button>
+              }>
                 <p className="p-5 leading-relaxed text-[1rem] text-gray-700 break-words">
                   {result.corrected_text}
                 </p>
@@ -346,55 +281,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* API Key Modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={(e) => e.currentTarget === e.target && setShowModal(false)}
-        >
-          <div className="bg-white w-full sm:max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-7 pb-9 shadow-2xl">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">API Key de Anthropic</h2>
-            <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-              Necesitás una clave de la API de Anthropic para analizar imágenes.
-              Se guarda únicamente en tu dispositivo.
-            </p>
-            <input
-              autoFocus
-              type="password"
-              placeholder="sk-ant-..."
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && saveKey()}
-              className="w-full border border-gray-200 focus:border-gray-900 rounded-[1rem] px-4 py-3.5 text-sm outline-none transition-colors mb-3"
-            />
-            <div className="flex gap-2.5">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 py-3.5 rounded-[1rem] border border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-400 transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={saveKey}
-                disabled={!keyInput.trim()}
-                className="flex-1 py-3.5 rounded-[1rem] bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                Guardar
-              </button>
-            </div>
-            {apiKey && (
-              <button
-                onClick={removeKey}
-                className="w-full mt-3 text-xs text-gray-400 hover:text-red-500 transition-colors py-1"
-              >
-                Eliminar API key guardada
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
     </div>
   )
 }
