@@ -2,26 +2,33 @@ import { useState, useRef, useCallback } from 'react'
 
 const API_URL = '/api/messages'
 
-const PROMPT = `Eres un especialista en detección de errores ortográficos y errores relacionados con la dislexia en textos escritos a mano.
+const PROMPT = `Eres un corrector estricto y preciso de textos escritos a mano, especializado en errores ortográficos y disléxicos.
 
-Analiza la imagen y responde ÚNICAMENTE con JSON válido (sin texto adicional, sin bloques de código markdown):
+REGLAS CRÍTICAS — léelas antes de analizar:
+1. Solo marca una palabra con "has_error": true si su CORRECCIÓN ES DISTINTA a la palabra original. Nunca marques una palabra correcta como errónea.
+2. Si una misma palabra aparece varias veces en el texto y en algunas instancias está bien escrita, esas instancias van con "has_error": false.
+3. Palabras correctas como "lo", "que", "y", "de", "en", "el", "la", "no", "te", "me", "se" NO son errores NUNCA a menos que estén claramente mal escritas (ej: "qe" en lugar de "que").
+4. NO inventes errores. Es preferible NO corregir algo dudoso que corregir algo correcto.
+5. El texto corregido debe ser una versión fluida y completa del texto original con solo los errores reales corregidos. Si no puedes leer una palabra, transcríbela como la ves — nunca escribas "[ilegible]".
+
+Errores válidos a detectar:
+- Ortográficos reales: tildes faltantes en palabras que las necesitan, confusión b/v, h muda, mayúsculas donde corresponde
+- Disléxicos reales: inversión de letras (b↔d, p↔q, n↔u), transposición de letras (al→la), omisión de letras que cambian la palabra, adición de letras extra
+
+Responde ÚNICAMENTE con JSON válido (sin texto adicional, sin bloques de código):
 {
-  "transcription": "texto transcrito exactamente como está escrito en la imagen",
+  "transcription": "texto transcrito exactamente como está escrito, sin cambios",
   "has_errors": true,
   "words": [
     {"text": "palabra", "has_error": false},
-    {"text": "eror", "has_error": true, "correction": "error", "error_type": "omisión de letra"}
+    {"text": "pieso", "has_error": true, "correction": "pienso", "error_type": "omisión de letra 'n'"}
   ],
-  "corrected_text": "el texto completo y correctamente escrito",
+  "corrected_text": "el texto completo corregido, fluido y sin errores",
   "error_count": 1,
   "summary": "Se encontró 1 error."
 }
 
-Tipos de errores a detectar:
-- Ortográficos: tildes faltantes, confusión b/v, h muda, uso de mayúsculas, puntuación
-- Disléxicos: inversión de letras (b↔d, p↔q, n↔u), transposición (al↔la, es↔se), omisión de letras, adición de letras extra, sustitución por sonido similar
-
-Importante: incluye CADA palabra del texto en el array "words", incluyendo signos de puntuación como elementos separados si los hay. Si no hay texto visible en la imagen, responde: {"transcription":"","has_errors":false,"words":[],"corrected_text":"","error_count":0,"summary":"No se detectó texto escrito en la imagen."}`
+Si no hay texto visible: {"transcription":"","has_errors":false,"words":[],"corrected_text":"","error_count":0,"summary":"No se detectó texto escrito en la imagen."}`
 
 function IconCamera() {
   return (
@@ -122,7 +129,19 @@ export default function App() {
     setApiError(null)
   }
 
-  const errorWords = result?.words?.filter(w => w.has_error) ?? []
+  // Filtra falsos positivos (corrección igual al original) y deduplica
+  const errorWords = (() => {
+    if (!result?.words) return []
+    const seen = new Set()
+    return result.words.filter(w => {
+      if (!w.has_error) return false
+      if (!w.correction || w.correction.toLowerCase() === w.text.toLowerCase()) return false
+      const key = `${w.text.toLowerCase()}→${w.correction.toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })()
 
   return (
     <div className="min-h-screen bg-white font-sans" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -240,15 +259,16 @@ export default function App() {
 
             <Card label="Texto detectado">
               <p className="p-5 leading-relaxed text-[1rem] text-gray-800 break-words">
-                {result.words.map((w, i) =>
-                  w.has_error ? (
+                {result.words.map((w, i) => {
+                  const isRealError = w.has_error && w.correction && w.correction.toLowerCase() !== w.text.toLowerCase()
+                  return isRealError ? (
                     <span key={i} className="text-red-500 underline underline-offset-2 decoration-wavy decoration-red-400/60">
                       {w.text}{' '}
                     </span>
                   ) : (
                     <span key={i}>{w.text}{' '}</span>
                   )
-                )}
+                })}
               </p>
             </Card>
 
