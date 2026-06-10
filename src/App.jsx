@@ -275,14 +275,14 @@ export default function App() {
             {errorWords.length > 0 && (
               <Card label="Correcciones">
                 {errorWords.map((w, i) => (
-                  <div key={i} className={`px-5 py-3.5 flex flex-col gap-1.5 ${i < errorWords.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                  <div key={i} className={`px-5 py-3.5 flex flex-col gap-2 ${i < errorWords.length - 1 ? 'border-b border-gray-50' : ''}`}>
                     <div className="flex items-center gap-3">
                       <span className="font-medium text-red-400 line-through text-sm">{w.text}</span>
                       <IconArrow />
                       <span className="font-semibold text-gray-900 text-sm">{w.correction}</span>
                     </div>
                     {w.error_type && (
-                      <span className="text-[0.68rem] text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full self-start leading-snug">
+                      <span className="text-[0.68rem] text-gray-400 leading-snug">
                         {w.error_type}
                       </span>
                     )}
