@@ -147,11 +147,8 @@ export default function App() {
     <div className="min-h-screen bg-white font-sans" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 h-[64px] flex items-center justify-center gap-3">
-        <img src="/dislexza.png" alt="Dislexza" className="h-9 w-9 rounded-xl" />
-        <span className="text-[1.35rem] font-bold tracking-tight text-gray-900" style={{ fontFamily: 'Inter, sans-serif' }}>
-          dislexza
-        </span>
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 h-[64px] flex items-center justify-center">
+        <img src="/dislexza.png" alt="Dislexza" className="h-12 w-12 rounded-xl" />
       </header>
 
       <main className="max-w-[560px] mx-auto px-5 py-10 pb-24">
